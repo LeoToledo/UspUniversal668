@@ -21,12 +21,13 @@ NUMBER_OF_EPISODES = int(linelist[5])
 NUMBER_OF_ITERATIONS = int(linelist[6])
 PICK_FROM_BUFFER_SIZE = int(linelist[7])
 RENDER = int(linelist[8])
+TRANSFER_LEARNING = int(linelist[9])
 
 #Parâmetros definidos pelo sistema
 BUFFER_LEN = 2000000
 EPSILON = 1
 
-ACTION_SPACE_SIZE = 3
+ACTION_SPACE_SIZE = 2 # 3
 
 
 #Definindo parâmetros da rede neural
@@ -78,23 +79,37 @@ class DQN_Agent:
 
 #Modelando a rede neural
     def create_network(self):
-        model = models.Sequential()
+        #model = models.Sequential()
         #Pega o tamanho do espaço de observações do ambiente
         state_shape = self.env.observation_space.shape
 
-        #A rede tem arquitetura escolhida pelo usuário
-        for i in range(NUMBER_OF_LAYERS):
-            if(i == 0):
-                model.add(layers.Dense(NEURONS_PER_LAYER[0], activation='relu', input_shape=state_shape))
-            else:
-                model.add(layers.Dense(NEURONS_PER_LAYER[i], activation='relu'))
+        if TRANSFER_LEARNING:
+            model = models.Sequential()
+            #Pega o tamanho do espaço de observações do ambiente
+            state_shape = self.env.observation_space.shape
 
-        #O tamanho da output layer é igual ao tamanho do espaço de ações
-        model.add(layers.Dense(ACTION_SPACE_SIZE, activation='linear'))
+            #A rede tem duas hidden layers, uma com 24 nós e outra com 48
+            model.add(layers.Dense(32, activation='relu', input_shape=state_shape))
+            model.add(layers.Dense(16, activation='relu'))
+            #O tamanho da output layer é igual ao tamanho do espaço de ações
+            model.add(layers.Dense(ACTION_SPACE_SIZE, activation='linear'))
+
+            #Transfer learning aqui
+            model.load_weights("./model_inverted_numerical/model_numerical.h5")
+        else:
+            model = models.Sequential()
+            #A rede tem arquitetura escolhida pelo usuário
+            for i in range(NUMBER_OF_LAYERS):
+                if(i == 0):
+                    model.add(layers.Dense(NEURONS_PER_LAYER[0], activation='relu', input_shape=state_shape))
+                else:
+                    model.add(layers.Dense(NEURONS_PER_LAYER[i], activation='relu'))
+            #O tamanho da output layer é igual ao tamanho do espaço de ações
+            model.add(layers.Dense(ACTION_SPACE_SIZE, activation='linear'))
 
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
 
-        #pf(model.summary())
+        pf(model.summary())
         return model
 
 #Escolhe qual ação tomar(aleatória ou não)
@@ -167,9 +182,9 @@ class DQN_Agent:
         if(act == 0):
             action = -0.2
         elif(act == 1):
-            action = 0
-        elif(act == 2):
             action = 0.2
+        #elif(act == 2):
+        #    action = 0.2
 
         return action
 
