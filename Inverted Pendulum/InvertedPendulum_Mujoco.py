@@ -85,12 +85,13 @@ class DQN_Agent:
 
         if TRANSFER_LEARNING:
             model = models.Sequential()
-            #Pega o tamanho do espaço de observações do ambiente
-            state_shape = self.env.observation_space.shape
-
-            #A rede tem duas hidden layers, uma com 24 nós e outra com 48
-            model.add(layers.Dense(32, activation='relu', input_shape=state_shape))
-            model.add(layers.Dense(16, activation='relu'))
+            model = models.Sequential()
+            #A rede tem arquitetura escolhida pelo usuário
+            for i in range(NUMBER_OF_LAYERS):
+                if(i == 0):
+                    model.add(layers.Dense(NEURONS_PER_LAYER[0], activation='relu', input_shape=state_shape))
+                else:
+                    model.add(layers.Dense(NEURONS_PER_LAYER[i], activation='relu'))
             #O tamanho da output layer é igual ao tamanho do espaço de ações
             model.add(layers.Dense(ACTION_SPACE_SIZE, activation='linear'))
 
