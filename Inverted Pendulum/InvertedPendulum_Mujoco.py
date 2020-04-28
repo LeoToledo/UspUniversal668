@@ -217,7 +217,7 @@ class DQN_Agent:
 
                 #Caso tenha concluído no step atual, dá um break no loop
                 if done:
-                    pf("Episodio: " + str(eps).zfill(3) + " || " + str(i).zfill(3) + " Steps" + " || Reward: " + str(reward_sum).zfill(3) + " || EPSILON: " + '{:.3f}'.format(self.epsilon), flush=True)
+                    pf("Episodio: " + str(eps).zfill(3) + " || " + str(i).zfill(3) + " Steps" + " || Reward: " + str(reward_sum).zfill(4) + " || EPSILON: " + '{:.3f}'.format(self.epsilon), flush=True)
                     self.train_network.save('./model_inverted_mujoco/model_mujoco.h5')
                     break
 

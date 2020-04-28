@@ -7,4 +7,4 @@ InvertedPendulum-v2
 200
 64
 0
-1
+0

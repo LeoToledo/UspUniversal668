@@ -23,6 +23,16 @@ PICK_FROM_BUFFER_SIZE = int(linelist[7])
 BUFFER_LEN = 200000
 EPSILON = 1
 
+#Definindo parâmetros da rede neural
+netlist = [line.rstrip('\n') for line in open("network.txt")]
+NUMBER_OF_LAYERS = int(netlist[0])
+NEURONS_PER_LAYER = []
+for i in range(NUMBER_OF_LAYERS):
+    NEURONS_PER_LAYER.append(int(netlist[i+1]))
+if(len(NEURONS_PER_LAYER)!=NUMBER_OF_LAYERS):
+    pf("INCONSISTENCIA NA INSERCAO DE CAMADAS E NEURONIOS POR CAMADA", flush=True)
+    exit()
+
 def pf(string, **kwargs):
     if ("flush") in kwargs:
         print(string, **kwargs)
@@ -60,12 +70,16 @@ class DQN_Agent:
 #Modelando a rede neural
     def create_network(self):
         model = models.Sequential()
+        
         #Pega o tamanho do espaço de observações do ambiente
         state_shape = self.env.observation_space.shape
 
-        #A rede tem duas hidden layers, uma com 24 nós e outra com 48
-        model.add(layers.Dense(32, activation='relu', input_shape=state_shape))
-        model.add(layers.Dense(16, activation='relu'))
+        #A rede tem arquitetura escolhida pelo usuário
+        for i in range(NUMBER_OF_LAYERS):
+            if(i == 0):
+                model.add(layers.Dense(NEURONS_PER_LAYER[0], activation='relu', input_shape=state_shape))
+            else:
+                model.add(layers.Dense(NEURONS_PER_LAYER[i], activation='relu'))
         #O tamanho da output layer é igual ao tamanho do espaço de ações
         model.add(layers.Dense(self.env.action_space.n, activation='linear'))
 
