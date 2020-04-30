@@ -62,7 +62,7 @@ class FirstWindowWidget(QTW.QWidget):
         self.w = MainWindow(self.selected_model)
 
     def open_directory(self):
-        directory_path = '.'
+        directory_path = '../Inverted_Pendulum'
         os.system('nautilus' +' '+ directory_path )
 
 #-----------------------------------------------------------------------------
@@ -172,6 +172,9 @@ class ParamWidget_S(QTW.QWidget):
                 self.yes_rd_btn_9.setChecked(True)
             else:
                 self.no_rd_btn_9.setChecked(True)
+        else:
+            self.no_rd_btn_8.setChecked(True)
+            self.no_rd_btn_9.setChecked(True)
 
         #Horizontal box
         h_box_lists = [QTW.QHBoxLayout() for i in range(self.n_param)]
@@ -251,7 +254,6 @@ class ParamWidget_N(QTW.QWidget):
 
     def __init__(self):
         super().__init__()
-        print('selcted_model =0')
         self.init_ui()
 
     def init_ui(self):
@@ -483,7 +485,10 @@ class ExecuteWidget(QTW.QWidget):
         self.process.begin_process()
 
     def open_directory(self):
-        directory_path = '.'
+        if self.qmainwindow.selected_model == 'num':
+            directory_path = '../Inverted_Pendulum/model_inverted_mujoco'
+        else:
+            directory_path = '../Inverted_Pendulum/model_inverted_numerical'
         os.system('nautilus' +' '+ directory_path )
 
 
@@ -513,11 +518,11 @@ class Process():
         #self.process.readyReadStandardError.connect(lambda: self.stderrReady())
 
         #signals to signal begin and end
-        self.process.started.connect(lambda: print('Started!', flush= True))
+        self.process.started.connect(lambda: print('Started!' + process_name, flush= True))
         self.process.finished.connect(lambda: print('Finished!', flush= True))
 
         print('Starting process', flush = True)
-        self.process.start('python', [process_name]) #starting the process
+        self.process.start('python', [process_name, '1111111111111']) #starting the process
 
         #updating the image
         #selecting the right path to reward.png
