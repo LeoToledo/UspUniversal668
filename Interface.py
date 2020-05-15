@@ -155,7 +155,7 @@ class ParamWidget_S(QTW.QWidget):
         self.editN_btn = QTW.QPushButton('Editar Camadas Neurais')
 
         #values that are already written in the .txt file
-        with open('../Inverted_Pendulum/parametros.txt', 'r') as r:
+        with open('Inverted_Pendulum/parametros.txt', 'r') as r:
             self.param_lines = r.readlines()
 
         #write each textEdit from actual .txt
@@ -172,6 +172,9 @@ class ParamWidget_S(QTW.QWidget):
                 self.yes_rd_btn_9.setChecked(True)
             else:
                 self.no_rd_btn_9.setChecked(True)
+        else:
+            self.no_rd_btn_8.setChecked(True)
+            self.no_rd_btn_9.setChecked(True)
 
         #Horizontal box
         h_box_lists = [QTW.QHBoxLayout() for i in range(self.n_param)]
@@ -212,7 +215,7 @@ class ParamWidget_S(QTW.QWidget):
 
     def write_txt(self):
         ''' This method will be called  when the confirm button is pressed, modifying the parameters .txt file'''
-        txt_name = '../Inverted_Pendulum/parametros.txt'
+        txt_name = './Inverted_Pendulum/parametros.txt'
         self.rd_btn_check_8 = None
         self.rd_btn_check_9 = None
 
@@ -251,7 +254,6 @@ class ParamWidget_N(QTW.QWidget):
 
     def __init__(self):
         super().__init__()
-        print('selcted_model =0')
         self.init_ui()
 
     def init_ui(self):
@@ -278,7 +280,7 @@ class ParamWidget_N(QTW.QWidget):
         self.editN_btn = QTW.QPushButton('Editar Camadas Neurais')
 
         #values that are already written in the .txt file
-        with open('../Inverted_Pendulum/parametros.txt', 'r') as r:
+        with open('./Inverted_Pendulum/parametros.txt', 'r') as r:
             self.param_lines = r.readlines()
 
         #write each textEdit
@@ -310,7 +312,7 @@ class ParamWidget_N(QTW.QWidget):
 
     def write_txt(self):
         ''' This method will be called  when the confirm button is pressed, modifying the parameters .txt file'''
-        txt_name = '../Inverted_Pendulum/parametros.txt'
+        txt_name = './Inverted_Pendulum/parametros.txt'
 
         # cleaning the file
         self.file_clean = open(txt_name, "w")
@@ -324,6 +326,9 @@ class ParamWidget_N(QTW.QWidget):
         with open(txt_name, 'a') as a: #a for append
             for i in range(self.n_param):
                 a.write(self.param_txt_lists[i] + '\n')
+            #writing param for mujoco, so we don't lose them
+            a.write(self.param_lines[8].strip() + '\n')
+            a.write(self.param_lines[9].strip() + '\n')
 
     def open_Net(self): #open Network Widget
         self.w = Network()
@@ -356,7 +361,7 @@ class Network(QTW.QWidget):
         h_box = QTW.QHBoxLayout()
 
         # Escrevendo em label o que ja está escrito no network.txt
-        with open('../Inverted_Pendulum/network.txt', 'r') as r:
+        with open('./Inverted_Pendulum/network.txt', 'r') as r:
             network_lines = r.readlines()
 
             txt_network_lines = ''
@@ -425,7 +430,7 @@ class Network_1(QTW.QWidget):
 
     def write_txt(self):
         ''' This method will be called  when the confirm button is pressed, modifying the parameters .txt file'''
-        txt_name = '../Inverted_Pendulum/network.txt'
+        txt_name = './Inverted_Pendulum/network.txt'
 
         #cleaning the file
         file_clean = open(txt_name, "w")
@@ -483,7 +488,10 @@ class ExecuteWidget(QTW.QWidget):
         self.process.begin_process()
 
     def open_directory(self):
-        directory_path = '.'
+        if self.qmainwindow.selected_model == 'num':
+            directory_path = './Inverted_Pendulum/model_inverted_mujoco'
+        else:
+            directory_path = './Inverted_Pendulum/model_inverted_numerical'
         os.system('nautilus' +' '+ directory_path )
 
 
@@ -498,9 +506,10 @@ class Process():
 
     def begin_process(self):
         if self.qmainwindow.selected_model == 'num':
-            process_name = '../Inverted_Pendulum/InvertedPendulum_Numerico.py'
+            process_name = './Inverted_Pendulum/InvertedPendulum_Numerico.py'
         else:
-            process_name = '../Inverted_Pendulum/InvertedPendulum_Mujoco.py'
+            process_name = './Inverted_Pendulum/InvertedPendulum_Mujoco.py'
+        path = './Inverted_Pendulum'
 
 
         print('Connecting Process')
@@ -513,18 +522,17 @@ class Process():
         #self.process.readyReadStandardError.connect(lambda: self.stderrReady())
 
         #signals to signal begin and end
-        self.process.started.connect(lambda: print('Started!', flush= True))
+        self.process.started.connect(lambda: print('Started!' + process_name, flush= True))
         self.process.finished.connect(lambda: print('Finished!', flush= True))
 
-        print('Starting process', flush = True)
-        self.process.start('python', [process_name]) #starting the process
+        self.process.start('python', [process_name, path]) #starting the process
 
         #updating the image
         #selecting the right path to reward.png
         if self.qmainwindow.selected_model == 'num':
-            self.reward = '../Inverted_Pendulum/model_inverted_numerical/reward.png'
+            self.reward = './Inverted_Pendulum/model_inverted_numerical/reward.png'
         else:
-            self.reward = '../Inverted_Pendulum/model_inverted_mujoco/Reward.png'
+            self.reward = './Inverted_Pendulum/model_inverted_mujoco/Reward.png'
         self.img = Image_plot(self.reward)
         self.th = Th(self.img)
         self.th.start()

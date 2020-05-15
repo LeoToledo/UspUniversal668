@@ -7,9 +7,15 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import sys
+
+try:
+     path = sys.argv[1]
+except:
+     path = '.'
 
 #Lendo o arquivo txt de parâmetros
-linelist = [line.rstrip('\n') for line in open("parametros.txt")]
+linelist = [line.rstrip('\n') for line in open(path + "/parametros.txt")]
 
 #Parâmetros definidos pelo usuário
 ENV_NAME = linelist[0]
@@ -31,7 +37,7 @@ ACTION_SPACE_SIZE = 2 # 3
 
 
 #Definindo parâmetros da rede neural
-netlist = [line.rstrip('\n') for line in open("network.txt")]
+netlist = [line.rstrip('\n') for line in open(path + "/network.txt")]
 NUMBER_OF_LAYERS = int(netlist[0])
 NEURONS_PER_LAYER = []
 for i in range(NUMBER_OF_LAYERS):
@@ -96,7 +102,7 @@ class DQN_Agent:
             model.add(layers.Dense(ACTION_SPACE_SIZE, activation='linear'))
 
             #Transfer learning aqui
-            model.load_weights("./model_inverted_numerical/model_numerical.h5")
+            model.load_weights(path + "/model_inverted_numerical/model_numerical.h5")
         else:
             model = models.Sequential()
             #A rede tem arquitetura escolhida pelo usuário
@@ -219,7 +225,7 @@ class DQN_Agent:
                 #Caso tenha concluído no step atual, dá um break no loop
                 if done:
                     pf("Episodio: " + str(eps).zfill(3) + " || " + str(i).zfill(3) + " Steps" + " || Reward: " + str(reward_sum).zfill(4) + " || EPSILON: " + '{:.3f}'.format(self.epsilon), flush=True)
-                    self.train_network.save('./model_inverted_mujoco/model_mujoco.h5')
+                    self.train_network.save(path + '/model_inverted_mujoco/model_mujoco.h5')
                     break
 
             #Armazena a reward total e o numero total de steps gastos para, posteriormente, plotar graficos
@@ -265,7 +271,7 @@ def plot(reward_store):
         plt.legend(loc="lower right", fontsize=30)
         plt.grid(True, linestyle='-', which='major', color='lightgrey',alpha=0.7)
         plt.title('Reward Per Episode',fontsize=30)
-        plt.savefig("./model_inverted_mujoco/Reward")
+        plt.savefig(path + "/model_inverted_mujoco/Reward")
         plt.close()
 
 env = gym.make(ENV_NAME)
