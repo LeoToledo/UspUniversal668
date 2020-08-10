@@ -20,12 +20,12 @@ linelist = [line.rstrip('\n') for line in open(path + "/parametros.txt")]
 
 #Parâmetros definidos pelo usuário
 ENV_NAME = linelist[0]
-GAMMA = float(linelist[1])
-EPSILON_DECAY = float(linelist[2])
-EPSILON_MIN = float(linelist[3])
-LEARNING_RATE = float(linelist[4])
-NUMBER_OF_EPISODES = int(linelist[5])
-NUMBER_OF_ITERATIONS = int(linelist[6])
+NUMBER_OF_EPISODES = int(linelist[1])
+NUMBER_OF_ITERATIONS = int(linelist[2])
+GAMMA = float(linelist[3])
+EPSILON_DECAY = float(linelist[4])
+EPSILON_MIN = float(linelist[5])
+LEARNING_RATE = float(linelist[6])
 PICK_FROM_BUFFER_SIZE = int(linelist[7])
 RENDER = int(linelist[8])
 TRANSFER_LEARNING = int(linelist[9])
