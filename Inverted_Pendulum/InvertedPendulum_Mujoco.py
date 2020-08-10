@@ -6,11 +6,20 @@ from collections import deque
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+import sys
 
+try:
+     path = sys.argv[1]
+except:
+     path = '.'
+
+print(' ')
 #Lendo o arquivo txt de parâmetros
-linelist = [line.rstrip('\n') for line in open("parametros.txt")]
+linelist = [line.rstrip('\n') for line in open(path + "/parametros.txt")]
 
 #Parâmetros definidos pelo usuário
+ENV_NAME = linelist[0]
 GAMMA = float(linelist[1])
 EPSILON_DECAY = float(linelist[2])
 EPSILON_MIN = float(linelist[3])
@@ -18,13 +27,18 @@ LEARNING_RATE = float(linelist[4])
 NUMBER_OF_EPISODES = int(linelist[5])
 NUMBER_OF_ITERATIONS = int(linelist[6])
 PICK_FROM_BUFFER_SIZE = int(linelist[7])
+RENDER = int(linelist[8])
+TRANSFER_LEARNING = int(linelist[9])
 
 #Parâmetros definidos pelo sistema
-BUFFER_LEN = 200000
+BUFFER_LEN = 2000000
 EPSILON = 1
 
+ACTION_SPACE_SIZE = 2 # 3
+
+
 #Definindo parâmetros da rede neural
-netlist = [line.rstrip('\n') for line in open("network.txt")]
+netlist = [line.rstrip('\n') for line in open(path + "/network.txt")]
 NUMBER_OF_LAYERS = int(netlist[0])
 NEURONS_PER_LAYER = []
 for i in range(NUMBER_OF_LAYERS):
@@ -38,7 +52,6 @@ def pf(string, **kwargs):
         print(string, **kwargs)
     else:
         print(string, flush= True, **kwargs)
-
 
 class DQN_Agent:
 
@@ -63,44 +76,61 @@ class DQN_Agent:
         self.iteration_num = NUMBER_OF_ITERATIONS
         self.pick_buffer_every = PICK_FROM_BUFFER_SIZE
 
-        #Variáveis de análise
+    #Variáveis do espaço de ação
+        self.action_space_size = ACTION_SPACE_SIZE
+        self.action_values = []
+    #Variáveis de análise
         self.total_rw_per_ep = []
         self.total_steps_per_ep = []
 
+
 #Modelando a rede neural
     def create_network(self):
-        model = models.Sequential()
-        
+        #model = models.Sequential()
         #Pega o tamanho do espaço de observações do ambiente
         state_shape = self.env.observation_space.shape
 
-        #A rede tem arquitetura escolhida pelo usuário
-        for i in range(NUMBER_OF_LAYERS):
-            if(i == 0):
-                model.add(layers.Dense(NEURONS_PER_LAYER[0], activation='relu', input_shape=state_shape))
-            else:
-                model.add(layers.Dense(NEURONS_PER_LAYER[i], activation='relu'))
-        #O tamanho da output layer é igual ao tamanho do espaço de ações
-        model.add(layers.Dense(self.env.action_space.n, activation='linear'))
+        if TRANSFER_LEARNING:
+            model = models.Sequential()
+            model = models.Sequential()
+            #A rede tem arquitetura escolhida pelo usuário
+            for i in range(NUMBER_OF_LAYERS):
+                if(i == 0):
+                    model.add(layers.Dense(NEURONS_PER_LAYER[0], activation='relu', input_shape=state_shape))
+                else:
+                    model.add(layers.Dense(NEURONS_PER_LAYER[i], activation='relu'))
+            #O tamanho da output layer é igual ao tamanho do espaço de ações
+            model.add(layers.Dense(ACTION_SPACE_SIZE, activation='linear'))
+
+            #Transfer learning aqui
+            model.load_weights(path + "/model_inverted_numerical/model_numerical.h5")
+        else:
+            model = models.Sequential()
+            #A rede tem arquitetura escolhida pelo usuário
+            for i in range(NUMBER_OF_LAYERS):
+                if(i == 0):
+                    model.add(layers.Dense(NEURONS_PER_LAYER[0], activation='relu', input_shape=state_shape))
+                else:
+                    model.add(layers.Dense(NEURONS_PER_LAYER[i], activation='relu'))
+            #O tamanho da output layer é igual ao tamanho do espaço de ações
+            model.add(layers.Dense(ACTION_SPACE_SIZE, activation='linear'))
 
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
-        print(model.summary())
+
+        pf(model.summary())
         return model
 
 #Escolhe qual ação tomar(aleatória ou não)
     def greedy_action(self, state):
-        #print("ESTADO: ", state)
-
         #Se atingir o epsilon min, fica nele.
         self.epsilon = max(self.epsilon_min, self.epsilon)
 
         #Escolhe um número aleatório entre 0 e 1. Se ele for menor do que epsilon, toma uma ação aleatória
         if(np.random.rand(1) < self.epsilon):
-            action = np.random.randint(0, env.action_space.n)
+            action = np.random.randint(0, ACTION_SPACE_SIZE)
         else:
             action = np.argmax(self.train_network.predict(state)[0])
 
-        #print("ACAO: ", action)
         return action
 
     def replay_memory(self):
@@ -155,27 +185,33 @@ class DQN_Agent:
         #Por fim, treina a train_network com os Q-values atualizados
         self.train_network.fit(states, targets, epochs=1, verbose=0)
 
+    #Recebe uma ação discretizada e transforma ela em um valor contiunuo que será recebido pelo mujoco
+    def continuous_action(self, act):
+        if(act == 0):
+            action = -0.2
+        elif(act == 1):
+            action = 0.2
+        #elif(act == 2):
+        #    action = 0.2
+
+        return action
 
     def play(self, current_state, eps):
             reward_sum = 0
-            #Começa a posição máxima com um valor baixo. Guardará a posição máxima de cada step
-            max_position = -99
+
             #Itera nos steps
             for i in range(self.iteration_num):
                 action = self.greedy_action(current_state)
+                act = self.continuous_action(action)
 
                 #Renderiza a cada 50 episódios
-                #if(eps%20 == 0):
-                 #   env.render()
+                if(RENDER):
+                    env.render()
+                    time.sleep(1e-3)
 
                 #Agente toma a ação
-                new_state, reward, done, _ = env.step(action)
+                new_state, reward, done, _ = env.step(act)
                 new_state = new_state.reshape(1, env.observation_space.shape[0])
-
-                #Guarda a posição máxima
-                if(new_state[0][0] > max_position):
-                    max_position = new_state[0][0]
-
 
                 #Adiciona os dados do step no buffer
                 self.replay_buffer.append([current_state, action, reward, new_state, done])
@@ -189,8 +225,8 @@ class DQN_Agent:
 
                 #Caso tenha concluído no step atual, dá um break no loop
                 if done:
-                    pf("Episodio: " + str(eps).zfill(3) + " || " + str(i).zfill(3) + " Steps" + " || Reward: " + str(reward_sum).zfill(3) + " || EPSILON: " + '{:.3f}'.format(self.epsilon), flush=True)
-                    self.train_network.save_weights('./model_inverted_numerical/model_numerical.h5')
+                    pf("Episodio: " + str(eps).zfill(3) + " || " + str(i).zfill(3) + " Steps" + " || Reward: " + str(reward_sum).zfill(4) + " || EPSILON: " + '{:.3f}'.format(self.epsilon), flush=True)
+                    self.train_network.save(path + '/model_inverted_mujoco/model_mujoco.h5')
                     break
 
             #Armazena a reward total e o numero total de steps gastos para, posteriormente, plotar graficos
@@ -206,38 +242,39 @@ class DQN_Agent:
     def start(self):
         #Itera nos episódios
         for eps in range(self.episode_num):
-
             current_state = env.reset().reshape(1, env.observation_space.shape[0])
             self.play(current_state, eps)
 
             #Plotando resultados
             plot(self.total_rw_per_ep)
 
+
+
 def plot(reward_store):
     #Fazendo uma média das rewards
-    N = 15
-    cumsum, moving_aves = [0], []
-    for i, x in enumerate(reward_store, 1):
-        cumsum.append(cumsum[i-1] + x)
-        if i>=N:
-            moving_ave = (cumsum[i] - cumsum[i-N])/N
-            #can do stuff with moving_ave here
-            moving_aves.append(moving_ave)
-    #Reward
-    plt.figure(num=None, figsize=(20, 12), dpi=120, facecolor='w', edgecolor='k')
-    plt.plot(moving_aves, color='b',label="Numerical Simulation",linewidth=2)
-    plt.yticks(fontsize=30)
-    plt.xticks(fontsize=30)
-    plt.ylabel("Reward",fontsize=30)
-    plt.xlabel("Episode",fontsize=30)
-    plt.legend(loc="lower right", fontsize=30)
-    plt.grid(True, linestyle='-', which='major', color='lightgrey',alpha=0.7)
-    plt.title('Reward Per Episode',fontsize=30)
-    plt.savefig("./model_inverted_numerical/reward")
-    plt.close()
+        N = 15
+        cumsum, moving_aves = [0], []
 
+        for i, x in enumerate(reward_store, 1):
+            cumsum.append(cumsum[i-1] + x)
+            if i>=N:
+                moving_ave = (cumsum[i] - cumsum[i-N])/N
+                #can do stuff with moving_ave here
+                moving_aves.append(moving_ave)
 
-if __name__ == "__main__":
-    env = gym.make("CartPole-v0")
-    dqn = DQN_Agent(env)
-    dqn.start()
+        #Reward
+        plt.figure(num=None, figsize=(20, 12), dpi=120, facecolor='w', edgecolor='k')
+        plt.plot(moving_aves, color='r',label="Mujoco Simulation",linewidth=2)
+        plt.yticks(fontsize=30)
+        plt.xticks(fontsize=30)
+        plt.ylabel("Reward",fontsize=30)
+        plt.xlabel("Episode",fontsize=30)
+        plt.legend(loc="lower right", fontsize=30)
+        plt.grid(True, linestyle='-', which='major', color='lightgrey',alpha=0.7)
+        plt.title('Reward Per Episode',fontsize=30)
+        plt.savefig(path + "/model_inverted_mujoco/Reward")
+        plt.close()
+
+env = gym.make(ENV_NAME)
+dqn = DQN_Agent(env)
+dqn.start()
