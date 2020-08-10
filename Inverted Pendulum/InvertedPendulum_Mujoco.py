@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+print(' ')
 #Lendo o arquivo txt de parâmetros
 linelist = [line.rstrip('\n') for line in open("parametros.txt")]
 
